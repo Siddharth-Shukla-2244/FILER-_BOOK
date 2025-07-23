@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📚 Filer</title>
+  <link rel="stylesheet" href="./static/styles.css" >
+</head>
+<body>
+  <div class="container">
+    <h1>📚 Filer</h1>
+
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Search by title or author..." />
+      <select id="genreFilter">
+        <option value="">All Genres</option>
+      </select>
+    </div>
+
+    <div id="bookList" class="book-list"></div>
+  </div>
+
+  <script>
+    let books = [];
+
+    async function fetchBooks() {
+      const res = await fetch("/api/books");
+      books = await res.json();
+      populateGenres();
+      displayBooks(books);
+    }
+
+    function displayBooks(bookList) {
+      const container = document.getElementById("bookList");
+      container.innerHTML = "";
+
+      if (bookList.length === 0) {
+        container.innerHTML = "<p>No books found.</p>";
+        return;
+      }
+
+      bookList.forEach((book) => {
+        const div = document.createElement("div");
+        div.className = "book-card";
+        div.innerHTML = `
+          <h3>${book.title}</h3>
+          <p><strong>${book.author}</strong></p>
+          <p>${book.genre} • ${book.year}</p>
+          <a href="${book.link}" target="_blank">Read Book →</a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function populateGenres() {
+      const genreFilter = document.getElementById("genreFilter");
+      const genres = [...new Set(books.map(b => b.genre))];
+
+      genres.forEach((genre) => {
+        const opt = document.createElement("option");
+        opt.value = genre;
+        opt.textContent = genre;
+        genreFilter.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+      const selectedGenre = document.getElementById("genreFilter").value;
+
+      const filtered = books.filter(book => {
+        const matchesText = book.title.toLowerCase().includes(searchTerm) ||
+                            book.author.toLowerCase().includes(searchTerm);
+        const matchesGenre = !selectedGenre || book.genre === selectedGenre;
+        return matchesText && matchesGenre;
+      });
+
+      displayBooks(filtered);
+    }
+
+    document.getElementById("searchInput").addEventListener("input", applyFilters);
+    document.getElementById("genreFilter").addEventListener("change", applyFilters);
+
+    fetchBooks();
+  </script>
+</body>
+</html>
